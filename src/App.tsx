@@ -2,11 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import PointCloudViewer from './components/PointCloudViewer';
+import { PerformanceMetrics } from './components/PerformanceMonitor';
 
 function App() {
   const [resetKey, setResetKey] = useState(0);
   const [currentFile, setCurrentFile] = useState<string>('/test.ply');
   const blobUrlRef = useRef<string | null>(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null);
+  const pageStartTimeRef = useRef<number>(performance.now());
 
   const handleResetView = () => {
     setResetKey(prev => prev + 1);
@@ -18,6 +21,10 @@ function App() {
       URL.revokeObjectURL(blobUrlRef.current);
     }
 
+    // 重置性能监控开始时间
+    pageStartTimeRef.current = performance.now();
+    setPerformanceMetrics(null);
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
@@ -28,6 +35,10 @@ function App() {
       setResetKey(prev => prev + 1); // 重置查看器以加载新文件
     };
     reader.readAsText(file);
+  };
+
+  const handlePerformanceUpdate = (metrics: PerformanceMetrics) => {
+    setPerformanceMetrics(metrics);
   };
 
   // 清理blob URL
@@ -43,9 +54,18 @@ function App() {
     <div className="w-screen h-screen flex flex-col bg-slate-950">
       <Header />
       <div className="flex-1 flex overflow-hidden" style={{ marginTop: '64px' }}>
-        <Sidebar onResetView={handleResetView} onLoadFile={handleLoadFile} />
+        <Sidebar 
+          onResetView={handleResetView} 
+          onLoadFile={handleLoadFile}
+          performanceMetrics={performanceMetrics}
+        />
         <div className="flex-1">
-          <PointCloudViewer key={resetKey} filePath={currentFile} />
+          <PointCloudViewer 
+            key={resetKey} 
+            filePath={currentFile}
+            onPerformanceUpdate={handlePerformanceUpdate}
+            startTime={pageStartTimeRef.current}
+          />
         </div>
       </div>
     </div>

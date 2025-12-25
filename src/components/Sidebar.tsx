@@ -1,12 +1,14 @@
 import { motion } from 'framer-motion';
 import { useState, useRef } from 'react';
+import { PerformanceMetrics } from './PerformanceMonitor';
 
 interface SidebarProps {
   onResetView: () => void;
   onLoadFile?: (file: File) => void;
+  performanceMetrics?: PerformanceMetrics | null;
 }
 
-export default function Sidebar({ onResetView, onLoadFile }: SidebarProps) {
+export default function Sidebar({ onResetView, onLoadFile, performanceMetrics }: SidebarProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -59,7 +61,19 @@ export default function Sidebar({ onResetView, onLoadFile }: SidebarProps) {
     >
       <div className="p-6 space-y-6">
         <div>
-          <h2 className="text-lg font-semibold text-purple-400 mb-4">控制面板</h2>
+          <h3 className="text-sm font-semibold text-purple-400 mb-3 flex items-center space-x-2">
+            <svg className="w-4 h-4" fill="none" stroke="url(#gradient1)" viewBox="0 0 24 24">
+              <defs>
+                <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#06b6d4" />
+                  <stop offset="50%" stopColor="#ec4899" />
+                  <stop offset="100%" stopColor="#f59e0b" />
+                </linearGradient>
+              </defs>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            <span>控制面板</span>
+          </h3>
           
           <div className="space-y-4">
             <motion.button
@@ -68,11 +82,23 @@ export default function Sidebar({ onResetView, onLoadFile }: SidebarProps) {
               onClick={onResetView}
               className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all"
             >
-              重置视角
+              复位视角
             </motion.button>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">加载点云文件</label>
+            <div className="pt-4 border-t border-purple-500/30">
+              <h3 className="text-sm font-semibold text-purple-400 mb-3 flex items-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="url(#gradient2)" viewBox="0 0 24 24">
+                  <defs>
+                    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#06b6d4" />
+                      <stop offset="50%" stopColor="#ec4899" />
+                      <stop offset="100%" stopColor="#f59e0b" />
+                    </linearGradient>
+                  </defs>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span>加载点云文件</span>
+              </h3>
               
               {/* 隐藏的原生文件输入 */}
               <input
@@ -139,15 +165,117 @@ export default function Sidebar({ onResetView, onLoadFile }: SidebarProps) {
           </div>
         </div>
 
-        <div className="pt-4 border-t border-purple-500/20">
-          <h3 className="text-sm font-semibold text-purple-400 mb-3">操作说明</h3>
-          <ul className="space-y-2 text-xs text-gray-400">
-            <li>• 左键拖拽：旋转视角</li>
-            <li>• 滚轮：缩放</li>
-            <li>• 右键拖拽：平移</li>
-            <li>• 点击重置：恢复初始视角</li>
-          </ul>
-        </div>
+        {/* 性能监控 */}
+        {performanceMetrics && (
+          <div className="pt-6 border-t border-purple-500/30">
+            <h3 className="text-sm font-semibold text-purple-400 mb-3 flex items-center space-x-2">
+              <svg className="w-4 h-4" fill="none" stroke="url(#gradient3)" viewBox="0 0 24 24">
+                <defs>
+                  <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#06b6d4" />
+                    <stop offset="50%" stopColor="#ec4899" />
+                    <stop offset="100%" stopColor="#f59e0b" />
+                  </linearGradient>
+                </defs>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>性能监控</span>
+            </h3>
+            <div className="space-y-3">
+              {/* 总耗时 */}
+              <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-3 border border-purple-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-400">总耗时</span>
+                  <span className={`text-sm font-bold ${
+                    performanceMetrics.totalTime < 1000 ? 'text-green-400' :
+                    performanceMetrics.totalTime < 2000 ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>
+                    {performanceMetrics.totalTime < 1000 
+                      ? `${performanceMetrics.totalTime.toFixed(2)} ms`
+                      : `${(performanceMetrics.totalTime / 1000).toFixed(2)} s`
+                    }
+                  </span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((performanceMetrics.totalTime / 3000) * 100, 100)}%` }}
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                  />
+                </div>
+              </div>
+
+              {/* 详细指标 */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-400">文件加载</span>
+                  <span className="text-purple-300 font-mono text-xs">
+                    {performanceMetrics.fileLoadTime < 1000 
+                      ? `${performanceMetrics.fileLoadTime.toFixed(2)} ms`
+                      : `${(performanceMetrics.fileLoadTime / 1000).toFixed(2)} s`
+                    }
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-400">数据解析</span>
+                  <span className="text-purple-300 font-mono text-xs">
+                    {performanceMetrics.parseTime < 1000 
+                      ? `${performanceMetrics.parseTime.toFixed(2)} ms`
+                      : `${(performanceMetrics.parseTime / 1000).toFixed(2)} s`
+                    }
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-400">场景渲染</span>
+                  <span className="text-purple-300 font-mono text-xs">
+                    {performanceMetrics.renderTime < 1000 
+                      ? `${performanceMetrics.renderTime.toFixed(2)} ms`
+                      : `${(performanceMetrics.renderTime / 1000).toFixed(2)} s`
+                    }
+                  </span>
+                </div>
+              </div>
+
+              {/* 分隔线 */}
+              <div className="border-t border-purple-500/20 my-2"></div>
+
+              {/* 点云信息 */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-400">点云数量</span>
+                  <span className="text-purple-300 font-mono text-xs">
+                    {performanceMetrics.pointCount.toLocaleString('zh-CN')}
+                  </span>
+                </div>
+                {performanceMetrics.fileName && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-400">文件名</span>
+                    <span className="text-purple-300 text-xs truncate max-w-[140px]" title={performanceMetrics.fileName}>
+                      {performanceMetrics.fileName}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* 性能评级 */}
+              <div className="pt-2 border-t border-purple-500/20">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">性能评级</span>
+                  <span className={`text-xs font-semibold ${
+                    performanceMetrics.totalTime < 1000 ? 'text-green-400' :
+                    performanceMetrics.totalTime < 2000 ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>
+                    {performanceMetrics.totalTime < 1000 ? '优秀' :
+                     performanceMetrics.totalTime < 2000 ? '良好' :
+                     '需优化'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </motion.aside>
   );

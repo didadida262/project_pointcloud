@@ -2,12 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { loadPLYFile, Point } from '../utils/plyLoader';
+import { PerformanceMetrics } from './PerformanceMonitor';
 
 interface PointCloudViewerProps {
   filePath?: string;
+  onPerformanceUpdate?: (metrics: PerformanceMetrics) => void;
+  startTime?: number; // 页面加载开始时间
 }
 
-export default function PointCloudViewer({ filePath = '/test.ply' }: PointCloudViewerProps) {
+export default function PointCloudViewer({ 
+  filePath = '/test.ply', 
+  onPerformanceUpdate,
+  startTime 
+}: PointCloudViewerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -19,10 +26,31 @@ export default function PointCloudViewer({ filePath = '/test.ply' }: PointCloudV
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const resetViewRef = useRef<(() => void) | null>(null);
-
-
+  const animationFrameIdRef = useRef<number | null>(null);
+  const isInitializedRef = useRef<boolean>(false);
+  
+  // 性能监控时间点
+  const fileLoadStartRef = useRef<number>(0);
+  const fileLoadEndRef = useRef<number>(0);
+  const parseStartRef = useRef<number>(0);
+  const parseEndRef = useRef<number>(0);
+  const renderStartRef = useRef<number>(0);
+  const renderEndRef = useRef<number>(0);
+  
+  // 使用ref保存回调函数，避免依赖变化导致重新渲染
+  const onPerformanceUpdateRef = useRef(onPerformanceUpdate);
+  const startTimeRef = useRef(startTime);
+  
   useEffect(() => {
-    if (!mountRef.current) return;
+    onPerformanceUpdateRef.current = onPerformanceUpdate;
+    startTimeRef.current = startTime;
+  }, [onPerformanceUpdate, startTime]);
+
+
+  // 初始化场景（只执行一次）
+  useEffect(() => {
+    if (!mountRef.current || isInitializedRef.current) return;
+    isInitializedRef.current = true;
 
     // 初始化场景
     const scene = new THREE.Scene();
@@ -61,9 +89,80 @@ export default function PointCloudViewer({ filePath = '/test.ply' }: PointCloudV
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
+    // 动画循环
+    const animate = () => {
+      animationFrameIdRef.current = requestAnimationFrame(animate);
+      if (controls && renderer && camera && sceneRef.current) {
+        controls.update();
+        renderer.render(sceneRef.current, camera);
+      }
+    };
+    animate();
+
+    // 处理窗口大小变化
+    const handleResize = () => {
+      if (!mountRef.current) return;
+      const width = mountRef.current.clientWidth;
+      const height = mountRef.current.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    };
+    window.addEventListener('resize', handleResize);
+
+    // 清理函数
+    return () => {
+      if (animationFrameIdRef.current !== null) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+      }
+      window.removeEventListener('resize', handleResize);
+      if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
+        mountRef.current.removeChild(renderer.domElement);
+      }
+      if (geometryRef.current) {
+        geometryRef.current.dispose();
+      }
+      if (materialRef.current) {
+        materialRef.current.dispose();
+      }
+      renderer.dispose();
+      controls.dispose();
+      isInitializedRef.current = false;
+    };
+  }, []); // 只在组件挂载时执行一次
+
+  // 加载点云文件（当filePath改变时执行）
+  useEffect(() => {
+    if (!isInitializedRef.current || !sceneRef.current) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    // 清理旧的点云
+    if (pointsRef.current && sceneRef.current) {
+      sceneRef.current.remove(pointsRef.current);
+      pointsRef.current = null;
+    }
+    if (geometryRef.current) {
+      geometryRef.current.dispose();
+      geometryRef.current = null;
+    }
+    if (materialRef.current) {
+      materialRef.current.dispose();
+      materialRef.current = null;
+    }
+
+    // 记录文件加载开始时间
+    fileLoadStartRef.current = performance.now();
+    
     // 加载点云
     loadPLYFile(filePath)
       .then((points: Point[]) => {
+        // 记录文件加载结束和解析开始时间
+        fileLoadEndRef.current = performance.now();
+        parseStartRef.current = performance.now();
+
         setLoading(false);
         setError(null);
 
@@ -98,6 +197,10 @@ export default function PointCloudViewer({ filePath = '/test.ply' }: PointCloudV
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
+        // 记录解析结束和渲染开始时间
+        parseEndRef.current = performance.now();
+        renderStartRef.current = performance.now();
+
         // 创建材质
         const material = new THREE.PointsMaterial({
           size: 0.01,
@@ -108,24 +211,58 @@ export default function PointCloudViewer({ filePath = '/test.ply' }: PointCloudV
 
         // 创建点云对象
         const pointsMesh = new THREE.Points(geometry, material);
-        scene.add(pointsMesh);
+        if (sceneRef.current) {
+          sceneRef.current.add(pointsMesh);
+        }
         pointsRef.current = pointsMesh;
 
         // 调整相机位置以查看整个点云
-        const box = new THREE.Box3().setFromObject(pointsMesh);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const fov = camera.fov * (Math.PI / 180);
-        let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-        cameraZ *= 1.5;
-        camera.position.set(center.x, center.y, center.z + cameraZ);
-        camera.lookAt(center);
-        controls.target.copy(center);
-        controls.update();
+        const camera = cameraRef.current;
+        const controls = controlsRef.current;
+        if (camera && controls) {
+          const box = new THREE.Box3().setFromObject(pointsMesh);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const fov = camera.fov * (Math.PI / 180);
+          let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+          cameraZ *= 1.5;
+          camera.position.set(center.x, center.y, center.z + cameraZ);
+          camera.lookAt(center);
+          controls.target.copy(center);
+          controls.update();
+        }
+
+        // 记录渲染结束时间
+        renderEndRef.current = performance.now();
+
+        // 计算性能指标
+        const fileLoadTime = fileLoadEndRef.current - fileLoadStartRef.current;
+        const parseTime = parseEndRef.current - parseStartRef.current;
+        const renderTime = renderEndRef.current - renderStartRef.current;
+        const totalTime = startTimeRef.current 
+          ? renderEndRef.current - startTimeRef.current 
+          : fileLoadTime + parseTime + renderTime;
+
+        // 获取文件名
+        const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || 'unknown';
+
+        // 通知性能更新
+        if (onPerformanceUpdateRef.current) {
+          onPerformanceUpdateRef.current({
+            totalTime,
+            fileLoadTime,
+            parseTime,
+            renderTime,
+            pointCount: points.length,
+            fileName: fileName === 'unknown' ? undefined : fileName,
+          });
+        }
 
         // 设置重置视角函数
         resetViewRef.current = () => {
+          const camera = cameraRef.current;
+          const controls = controlsRef.current;
           if (pointsMesh && camera && controls) {
             const box = new THREE.Box3().setFromObject(pointsMesh);
             const center = box.getCenter(new THREE.Vector3());
@@ -146,43 +283,7 @@ export default function PointCloudViewer({ filePath = '/test.ply' }: PointCloudV
         setError(err.message || '加载点云文件失败');
         console.error('Error loading PLY file:', err);
       });
-
-    // 动画循环
-    const animate = () => {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    // 处理窗口大小变化
-    const handleResize = () => {
-      if (!mountRef.current) return;
-      const width = mountRef.current.clientWidth;
-      const height = mountRef.current.clientHeight;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-    };
-    window.addEventListener('resize', handleResize);
-
-    // 清理函数
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
-        mountRef.current.removeChild(renderer.domElement);
-      }
-      if (geometryRef.current) {
-        geometryRef.current.dispose();
-      }
-      if (materialRef.current) {
-        materialRef.current.dispose();
-      }
-      renderer.dispose();
-      controls.dispose();
-      resetViewRef.current = null;
-    };
-  }, [filePath]);
+  }, [filePath]); // 当filePath改变时重新加载点云
 
   return (
     <div ref={mountRef} className="w-full h-full relative">
