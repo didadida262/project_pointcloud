@@ -10,9 +10,17 @@ function App() {
   const blobUrlRef = useRef<string | null>(null);
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null);
   const pageStartTimeRef = useRef<number>(performance.now());
+  const resetViewFnRef = useRef<(() => void) | null>(null);
 
   const handleResetView = () => {
-    setResetKey(prev => prev + 1);
+    // 直接调用重置函数，而不是重新挂载组件
+    if (resetViewFnRef.current) {
+      resetViewFnRef.current();
+    }
+  };
+
+  const handleResetViewReady = (resetFn: () => void) => {
+    resetViewFnRef.current = resetFn;
   };
 
   const handleLoadFile = (file: File) => {
@@ -65,6 +73,7 @@ function App() {
             filePath={currentFile}
             onPerformanceUpdate={handlePerformanceUpdate}
             startTime={pageStartTimeRef.current}
+            onResetViewReady={handleResetViewReady}
           />
         </div>
       </div>

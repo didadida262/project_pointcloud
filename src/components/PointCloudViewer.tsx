@@ -8,12 +8,14 @@ interface PointCloudViewerProps {
   filePath?: string;
   onPerformanceUpdate?: (metrics: PerformanceMetrics) => void;
   startTime?: number; // 页面加载开始时间
+  onResetViewReady?: (resetFn: () => void) => void; // 暴露重置函数给父组件
 }
 
 export default function PointCloudViewer({ 
   filePath = '/test.ply', 
   onPerformanceUpdate,
-  startTime 
+  startTime,
+  onResetViewReady
 }: PointCloudViewerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -40,11 +42,13 @@ export default function PointCloudViewer({
   // 使用ref保存回调函数，避免依赖变化导致重新渲染
   const onPerformanceUpdateRef = useRef(onPerformanceUpdate);
   const startTimeRef = useRef(startTime);
+  const onResetViewReadyRef = useRef(onResetViewReady);
   
   useEffect(() => {
     onPerformanceUpdateRef.current = onPerformanceUpdate;
     startTimeRef.current = startTime;
-  }, [onPerformanceUpdate, startTime]);
+    onResetViewReadyRef.current = onResetViewReady;
+  }, [onPerformanceUpdate, startTime, onResetViewReady]);
 
 
   // 初始化场景（只执行一次）
@@ -277,6 +281,11 @@ export default function PointCloudViewer({
             controls.update();
           }
         };
+        
+        // 暴露重置函数给父组件
+        if (onResetViewReadyRef.current) {
+          onResetViewReadyRef.current(resetViewRef.current);
+        }
       })
       .catch((err) => {
         setLoading(false);
