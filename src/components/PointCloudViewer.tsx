@@ -39,6 +39,7 @@ export default function PointCloudViewer({
   const parseEndRef = useRef<number>(0);
   const renderStartRef = useRef<number>(0);
   const renderEndRef = useRef<number>(0);
+  const fileSizeRef = useRef<number>(0);
   
   // 使用ref保存回调函数，避免依赖变化导致重新渲染
   const onPerformanceUpdateRef = useRef(onPerformanceUpdate);
@@ -161,10 +162,15 @@ export default function PointCloudViewer({
     // 记录文件加载开始时间
     fileLoadStartRef.current = performance.now();
     setLoadProgress(0);
+    fileSizeRef.current = 0;
     
     // 加载点云（使用优化后的加载器，支持进度回调）
     loadPLYFile(filePath, (progress) => {
       setLoadProgress(progress.percentage);
+      // 从进度回调中获取文件大小
+      if (progress.total && progress.total > 0) {
+        fileSizeRef.current = progress.total;
+      }
     })
       .then((points: Point[]) => {
         // 记录文件加载结束和解析开始时间
@@ -264,6 +270,7 @@ export default function PointCloudViewer({
             renderTime,
             pointCount: points.length,
             fileName: fileName === 'unknown' ? undefined : fileName,
+            fileSize: fileSizeRef.current > 0 ? fileSizeRef.current : undefined,
           });
         }
 

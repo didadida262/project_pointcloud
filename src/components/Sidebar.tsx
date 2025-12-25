@@ -53,6 +53,15 @@ export default function Sidebar({ onResetView, onLoadFile, performanceMetrics }:
     fileInputRef.current?.click();
   };
 
+  // 格式化文件大小
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+  };
+
   return (
     <motion.aside
       initial={{ x: -300, opacity: 0 }}
@@ -249,6 +258,14 @@ export default function Sidebar({ onResetView, onLoadFile, performanceMetrics }:
                     {performanceMetrics.pointCount.toLocaleString('zh-CN')}
                   </span>
                 </div>
+                {performanceMetrics.fileSize && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-400">文件大小</span>
+                    <span className="text-purple-300 font-mono text-xs">
+                      {formatFileSize(performanceMetrics.fileSize)}
+                    </span>
+                  </div>
+                )}
                 {performanceMetrics.fileName && (
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-400">文件名</span>

@@ -8,6 +8,7 @@ export interface PerformanceMetrics {
   renderTime: number; // 渲染耗时
   pointCount: number; // 点云数量
   fileName?: string; // 文件名
+  fileSize?: number; // 文件大小（字节）
 }
 
 interface PerformanceMonitorProps {
