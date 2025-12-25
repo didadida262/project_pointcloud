@@ -27,6 +27,7 @@ export default function PointCloudViewer({
   const materialRef = useRef<THREE.PointsMaterial | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadProgress, setLoadProgress] = useState<number>(0);
   const resetViewRef = useRef<(() => void) | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const isInitializedRef = useRef<boolean>(false);
@@ -159,9 +160,12 @@ export default function PointCloudViewer({
 
     // 记录文件加载开始时间
     fileLoadStartRef.current = performance.now();
+    setLoadProgress(0);
     
-    // 加载点云
-    loadPLYFile(filePath)
+    // 加载点云（使用优化后的加载器，支持进度回调）
+    loadPLYFile(filePath, (progress) => {
+      setLoadProgress(progress.percentage);
+    })
       .then((points: Point[]) => {
         // 记录文件加载结束和解析开始时间
         fileLoadEndRef.current = performance.now();
@@ -298,9 +302,18 @@ export default function PointCloudViewer({
     <div ref={mountRef} className="w-full h-full relative overflow-hidden">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 z-10">
-          <div className="text-center">
+          <div className="text-center w-full max-w-md px-6">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
-            <p className="text-purple-400">加载点云数据中...</p>
+            <p className="text-purple-400 mb-4">加载点云数据中...</p>
+            
+            {/* 进度条 */}
+            <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden mb-2">
+              <div
+                style={{ width: `${loadProgress}%` }}
+                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+              />
+            </div>
+            <p className="text-xs text-gray-400">{Math.round(loadProgress)}%</p>
           </div>
         </div>
       )}
