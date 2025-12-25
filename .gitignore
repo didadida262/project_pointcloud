@@ -106,3 +106,7 @@ yarn-error.log*
 
 # Turbo
 .turbo
+
+# Project documentation files
+需求文档.txt
+*.需求文档.*
