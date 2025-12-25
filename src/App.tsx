@@ -51,15 +51,15 @@ function App() {
   }, []);
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-slate-950">
+    <div className="w-screen h-screen flex flex-col bg-slate-950 overflow-hidden">
       <Header />
-      <div className="flex-1 flex overflow-hidden" style={{ marginTop: '64px' }}>
+      <div className="flex-1 flex overflow-hidden pt-16">
         <Sidebar 
           onResetView={handleResetView} 
           onLoadFile={handleLoadFile}
           performanceMetrics={performanceMetrics}
         />
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <PointCloudViewer 
             key={resetKey} 
             filePath={currentFile}

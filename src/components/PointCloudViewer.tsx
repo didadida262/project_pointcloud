@@ -286,7 +286,7 @@ export default function PointCloudViewer({
   }, [filePath]); // 当filePath改变时重新加载点云
 
   return (
-    <div ref={mountRef} className="w-full h-full relative">
+    <div ref={mountRef} className="w-full h-full relative overflow-hidden">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 z-10">
           <div className="text-center">

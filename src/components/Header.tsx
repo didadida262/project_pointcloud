@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 export default function Header() {
   return (
     <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 border-b border-purple-500/20 z-50"
     >
       <div className="h-full flex items-center justify-center px-6">

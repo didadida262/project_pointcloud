@@ -55,9 +55,10 @@ export default function Sidebar({ onResetView, onLoadFile, performanceMetrics }:
 
   return (
     <motion.aside
-      initial={{ x: -300 }}
-      animate={{ x: 0 }}
-      className="w-64 bg-slate-900/95 border-r border-purple-500/20 h-full overflow-y-auto"
+      initial={{ x: -300, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="w-64 bg-slate-900/95 border-r border-purple-500/20 h-full overflow-y-auto flex-shrink-0"
     >
       <div className="p-6 space-y-6">
         <div>
