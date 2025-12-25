@@ -110,7 +110,8 @@ export function loadPLYFileWithWorker(
     `;
     
     const blob = new Blob([workerCode], { type: 'application/javascript' });
-    const worker = new Worker(URL.createObjectURL(blob));
+    const workerUrl = URL.createObjectURL(blob);
+    const worker = new Worker(workerUrl);
     
     // 先获取文件内容
     fetch(filePath)
@@ -121,12 +122,14 @@ export function loadPLYFileWithWorker(
       })
       .catch(err => {
         worker.terminate();
+        URL.revokeObjectURL(workerUrl);
         reject(err);
       });
     
     worker.onmessage = (e) => {
       if (e.data.error) {
         worker.terminate();
+        URL.revokeObjectURL(workerUrl);
         reject(new Error(e.data.error));
         return;
       }
@@ -137,14 +140,14 @@ export function loadPLYFileWithWorker(
       
       if (e.data.complete) {
         worker.terminate();
-        URL.revokeObjectURL(blob);
+        URL.revokeObjectURL(workerUrl);
         resolve(e.data.points);
       }
     };
     
     worker.onerror = (error) => {
       worker.terminate();
-      URL.revokeObjectURL(blob);
+      URL.revokeObjectURL(workerUrl);
       reject(error);
     };
   });
