@@ -219,7 +219,7 @@ export default function Sidebar({ onResetView, onLoadFile, performanceMetrics }:
               {/* 详细指标 */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400">文件加载</span>
+                  <span className="text-gray-400">文件加载与解析</span>
                   <span className="text-purple-300 font-mono text-xs">
                     {performanceMetrics.fileLoadTime < 1000 
                       ? `${performanceMetrics.fileLoadTime.toFixed(2)} ms`
@@ -228,7 +228,7 @@ export default function Sidebar({ onResetView, onLoadFile, performanceMetrics }:
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400">数据解析</span>
+                  <span className="text-gray-400">几何体构建</span>
                   <span className="text-purple-300 font-mono text-xs">
                     {performanceMetrics.parseTime < 1000 
                       ? `${performanceMetrics.parseTime.toFixed(2)} ms`

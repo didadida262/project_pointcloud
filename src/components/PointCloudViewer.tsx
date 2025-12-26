@@ -173,8 +173,9 @@ export default function PointCloudViewer({
       }
     })
       .then((points: Point[]) => {
-        // 记录文件加载结束和解析开始时间
+        // 记录文件加载和解析结束时间（loadPointCloudFile包含文件读取和解析）
         fileLoadEndRef.current = performance.now();
+        // 记录几何体构建开始时间
         parseStartRef.current = performance.now();
 
         setLoading(false);
@@ -211,7 +212,7 @@ export default function PointCloudViewer({
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        // 记录解析结束和渲染开始时间
+        // 记录几何体构建结束和场景渲染开始时间
         parseEndRef.current = performance.now();
         renderStartRef.current = performance.now();
 
@@ -251,8 +252,11 @@ export default function PointCloudViewer({
         renderEndRef.current = performance.now();
 
         // 计算性能指标
+        // fileLoadTime: 文件读取 + 数据解析（在loadPointCloudFile中完成）
         const fileLoadTime = fileLoadEndRef.current - fileLoadStartRef.current;
+        // parseTime: 几何体构建（计算中心点、填充数据、设置属性）
         const parseTime = parseEndRef.current - parseStartRef.current;
+        // renderTime: 场景渲染（创建材质、点云对象、添加到场景、调整相机）
         const renderTime = renderEndRef.current - renderStartRef.current;
         const totalTime = startTimeRef.current 
           ? renderEndRef.current - startTimeRef.current 
