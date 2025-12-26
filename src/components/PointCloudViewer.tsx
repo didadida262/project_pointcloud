@@ -259,7 +259,15 @@ export default function PointCloudViewer({
           : fileLoadTime + parseTime + renderTime;
 
         // 获取文件名
-        const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || 'unknown';
+        let fileName = 'unknown';
+        // 优先从query参数中获取文件名（处理blob URL的情况）
+        if (filePath.includes('?filename=')) {
+          const urlParts = filePath.split('?filename=');
+          fileName = decodeURIComponent(urlParts[1]);
+        } else {
+          // 从路径中提取文件名
+          fileName = filePath.split('/').pop() || filePath.split('\\').pop() || 'unknown';
+        }
 
         // 通知性能更新
         if (onPerformanceUpdateRef.current) {
