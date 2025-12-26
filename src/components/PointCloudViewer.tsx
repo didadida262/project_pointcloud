@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { loadPLYFile, Point } from '../utils/plyLoader';
+import { loadPointCloudFile, Point, LoadProgress } from '../utils/plyLoader';
 import { PerformanceMetrics } from './PerformanceMonitor';
 
 interface PointCloudViewerProps {
@@ -164,8 +164,8 @@ export default function PointCloudViewer({
     setLoadProgress(0);
     fileSizeRef.current = 0;
     
-    // 加载点云（使用优化后的加载器，支持进度回调）
-    loadPLYFile(filePath, (progress) => {
+    // 加载点云（使用通用加载器，自动识别PLY/TXT格式，支持进度回调）
+    loadPointCloudFile(filePath, (progress: LoadProgress) => {
       setLoadProgress(progress.percentage);
       // 从进度回调中获取文件大小
       if (progress.total && progress.total > 0) {
@@ -298,10 +298,10 @@ export default function PointCloudViewer({
           onResetViewReadyRef.current(resetViewRef.current);
         }
       })
-      .catch((err) => {
+      .catch((err: Error) => {
         setLoading(false);
         setError(err.message || '加载点云文件失败');
-        console.error('Error loading PLY file:', err);
+        console.error('Error loading point cloud file:', err);
       });
   }, [filePath]); // 当filePath改变时重新加载点云
 

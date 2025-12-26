@@ -39,7 +39,10 @@ function App() {
       const blob = new Blob([text], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       blobUrlRef.current = url;
-      setCurrentFile(url);
+      // 将文件名信息附加到URL中，用于格式识别
+      // 格式：blob:http://...?filename=test.txt
+      const urlWithFilename = `${url}?filename=${encodeURIComponent(file.name)}`;
+      setCurrentFile(urlWithFilename);
       setResetKey(prev => prev + 1); // 重置查看器以加载新文件
     };
     reader.readAsText(file);

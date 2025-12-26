@@ -44,7 +44,7 @@ export default function Sidebar({ onResetView, onLoadFile, performanceMetrics }:
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.name.endsWith('.ply')) {
+    if (file && (file.name.endsWith('.ply') || file.name.endsWith('.txt'))) {
       handleFileChange(file);
     }
   };
@@ -114,7 +114,7 @@ export default function Sidebar({ onResetView, onLoadFile, performanceMetrics }:
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".ply"
+                accept=".ply,.txt"
                 onChange={handleFileInputChange}
                 disabled={isLoading}
                 className="hidden"
@@ -166,7 +166,7 @@ export default function Sidebar({ onResetView, onLoadFile, performanceMetrics }:
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-medium text-gray-300">点击选择或拖拽文件</p>
-                      <p className="text-xs text-gray-500 mt-1">支持 .ply 格式</p>
+                      <p className="text-xs text-gray-500 mt-1">支持 .ply 和 .txt 格式</p>
                     </div>
                   </div>
                 )}

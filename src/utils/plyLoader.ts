@@ -261,3 +261,51 @@ export async function loadPLYFileSimple(filePath: string): Promise<Point[]> {
   
   return pointsArray.slice(0, pointIndex);
 }
+
+// 通用点云文件加载器 - 自动识别文件格式
+export async function loadPointCloudFile(
+  filePath: string,
+  onProgress?: (progress: LoadProgress) => void
+): Promise<Point[]> {
+  // 从URL中提取文件名（处理blob URL的情况）
+  let filename = '';
+  let extension = '';
+  
+  // 检查是否是blob URL，尝试从query参数获取文件名
+  if (filePath.includes('?filename=')) {
+    const urlParts = filePath.split('?filename=');
+    const actualPath = urlParts[0]; // 实际的blob URL
+    filename = decodeURIComponent(urlParts[1]);
+    extension = filename.split('.').pop()?.toLowerCase() || '';
+    filePath = actualPath; // 使用实际的blob URL进行加载
+  } else {
+    // 普通URL，从路径中提取扩展名
+    extension = filePath.split('.').pop()?.toLowerCase() || '';
+  }
+  
+  // 根据文件扩展名选择加载器
+  if (extension === 'txt') {
+    const { loadTXTFile } = await import('./txtLoader');
+    return loadTXTFile(filePath, onProgress);
+  } else if (extension === 'ply') {
+    return loadPLYFile(filePath, onProgress);
+  } else {
+    // 无法识别格式时，先尝试TXT（更简单，无header），再尝试PLY
+    // 这样可以处理blob URL没有扩展名的情况
+    try {
+      const { loadTXTFile } = await import('./txtLoader');
+      return loadTXTFile(filePath, onProgress);
+    } catch (txtError) {
+      // 如果TXT失败，尝试PLY格式
+      try {
+        return loadPLYFile(filePath, onProgress);
+      } catch (plyError) {
+        // 提供更友好的错误信息
+        const errorMsg = extension 
+          ? `不支持的文件格式：.${extension}。支持 .ply 和 .txt 格式。`
+          : `无法识别文件格式。支持 .ply 和 .txt 格式。`;
+        throw new Error(errorMsg);
+      }
+    }
+  }
+}
